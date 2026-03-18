@@ -1,5 +1,7 @@
 package tokenizer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class Tokenizer {
@@ -15,6 +17,32 @@ public class Tokenizer {
         while (position < input.length() &&
                 Character.isWhitespace(input.charAt(position))) {
             position++;
+        }
+    }
+
+    // assumes position is initially in bounds
+    // read symbol tokens,
+    public Optional<Token> readSymbol() {
+        char c = input.charAt(position);
+        return Optional.empty();
+    }
+
+    // assumes position is initially in bounds
+    // reads integer tokens
+
+    public Optional<Token> readInteger() {
+        String digits = "";
+        char c = ' ';
+        while (position < input.length() &&
+                Character.isDigit(c = input.charAt(position))) {
+            digits += c;
+            position++;
+        }
+
+        if (digits.length() > 0) {
+            return Optional.of(new IntegerToken(Integer.parseInt(digits)));
+        } else {
+            return Optional.empty();
         }
     }
 
@@ -61,15 +89,66 @@ public class Tokenizer {
                 return Optional.of(new BoolToken());
             } else if (identifierOrReservedWord.equals("break")) {
                 return Optional.of(new BreakToken());
-
             } else if (identifierOrReservedWord.equals("func")) {
                 return Optional.of(new FuncToken());
+            } else if (identifierOrReservedWord.equals("int")) {
+                return Optional.of(new IntToken());
             } else {
 
                 return Optional.of(new IdentifierToken(identifierOrReservedWord));
             }
         } else {
             return Optional.empty();
+        }
+    }
+
+    // returns empty if there are no remaining tokens
+    public Optional<Token> readToken() throws TokenizerException {
+        skipWhitespace();
+        if (position >= input.length()) {
+            return Optional.empty();
+        } else {
+            Optional<Token> retval = readSymbol();
+            if (retval.isPresent()) {
+                return retval;
+            }
+            retval = readInteger();
+            if (retval.isPresent()) {
+                return retval;
+            }
+            retval = readIdentifierOrReservedWord();
+            if (retval.isPresent()) {
+                return retval;
+            } else {
+                throw new TokenizerException("Found unrecognized character: " +
+                        input.charAt(position) + " at position " +
+                        position);
+            }
+        }
+    }
+
+    // returns a list of all tokens in the input string
+    public List<Token> tokenize() throws TokenizerException {
+        final List<Token> retval = new ArrayList<Token>();
+        Optional<Token> token = readToken();
+        while (token.isPresent()) {
+            retval.add(token.get());
+            token = readToken();
+        }
+        return retval;
+    }
+
+    // static method that tokenizes an input string and returns a list of tokens
+    public static List<Token> tokenize(final String input)
+            throws TokenizerException {
+        return new Tokenizer(input).tokenize();
+    }
+
+    public static void main(String[] args) throws TokenizerException {
+        if (args.length == 1) {
+            System.out.println(tokenize(args[0]));
+        } else {
+            System.out.println("Needs a string to tokenize");
         }
     }
 }

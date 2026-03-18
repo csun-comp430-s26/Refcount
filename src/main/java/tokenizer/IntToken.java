@@ -1,5 +1,5 @@
 package tokenizer;
 
-public record IntToken(int value) implements Token {
+public record IntToken() implements Token {
 
 }
