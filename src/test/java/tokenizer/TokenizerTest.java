@@ -3,6 +3,7 @@ package tokenizer;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 public class TokenizerTest {
@@ -24,6 +25,19 @@ public class TokenizerTest {
                 Tokenizer.tokenize("x"));
     }
 
+    @Test
+    public void testInteger() throws TokenizerException {
+        assertEquals(Arrays.asList(new IntegerToken(1)),
+                Tokenizer.tokenize("1"));
+    }
+
+    @Test
+    public void testInvalid() throws TokenizerException {
+        assertThrows(TokenizerException.class,
+                () -> Tokenizer.tokenize("$"));
+    }
+
+    // TESTS FOR RESERVED WORDS
     @Test
     public void testTrueToken() throws TokenizerException {
         assertEquals(Arrays.asList(new TrueToken()),
