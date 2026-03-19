@@ -63,18 +63,12 @@ public class Tokenizer {
                 return Optional.of(new TrueToken());
             } else if (identifierOrReservedWord.equals("false")) {
                 return Optional.of(new FalseToken());
-
             } else if (identifierOrReservedWord.equals("void")) {
                 return Optional.of(new VoidToken());
-
             } else if (identifierOrReservedWord.equals("while")) {
                 return Optional.of(new WhileToken());
             } else if (identifierOrReservedWord.equals("struct")) {
                 return Optional.of(new StructToken());
-            } else if (identifierOrReservedWord.equals("var")) {
-                return Optional.of(new VarToken());
-            } else if (identifierOrReservedWord.equals("type")) {
-                return Optional.of(new TypeToken());
             } else if (identifierOrReservedWord.equals("null")) {
                 return Optional.of(new NullToken());
             } else if (identifierOrReservedWord.equals("new")) {
@@ -85,6 +79,8 @@ public class Tokenizer {
                 return Optional.of(new ReturnToken());
             } else if (identifierOrReservedWord.equals("if")) {
                 return Optional.of(new IfToken());
+            } else if (identifierOrReservedWord.equals("else")) {
+                return Optional.of(new ElseToken());
             } else if (identifierOrReservedWord.equals("bool")) {
                 return Optional.of(new BoolToken());
             } else if (identifierOrReservedWord.equals("break")) {
@@ -100,6 +96,7 @@ public class Tokenizer {
         } else {
             return Optional.empty();
         }
+
     }
 
     // returns empty if there are no remaining tokens
