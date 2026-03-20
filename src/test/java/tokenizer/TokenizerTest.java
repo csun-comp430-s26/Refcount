@@ -127,4 +127,54 @@ public class TokenizerTest {
         assertEquals(Arrays.asList(new StructToken()),
                 Tokenizer.tokenize("struct"));
     }
+
+    @Test
+    public void testArithmeticSymbols() throws TokenizerException {
+        assertEquals(Arrays.asList(
+                new PlusToken(),
+                new MinusToken(),
+                new StarToken(),
+                new SlashToken()),
+                Tokenizer.tokenize("+-*/"));
+    }
+
+    @Test
+    public void testComparisonAndAssignSymbols() throws TokenizerException {
+        assertEquals(Arrays.asList(
+                new LessToken(),
+                new LessEqualToken(),
+                new GreaterToken(),
+                new GreaterEqualToken(),
+                new AssignToken(),
+                new EqualEqualToken(),
+                new NotEqualToken()),
+                Tokenizer.tokenize("< <= > >= = == !="));
+    }
+
+    @Test
+    public void testPunctuationSymbols() throws TokenizerException {
+        assertEquals(Arrays.asList(
+                new LeftBraceToken(),
+                new RightBraceToken(),
+                new LeftParenToken(),
+                new RightParenToken(),
+                new SemicolonToken(),
+                new ColonToken(),
+                new CommaToken(),
+                new DotToken()),
+                Tokenizer.tokenize("{}();:,."));
+    }
+
+    @Test
+    public void testExpressionMix() throws TokenizerException {
+        assertEquals(Arrays.asList(
+                new IntegerToken(1),
+                new PlusToken(),
+                new IntegerToken(2),
+                new StarToken(),
+                new LeftParenToken(),
+                new IntegerToken(3),
+                new RightParenToken()),
+                Tokenizer.tokenize("1+2*(3)"));
+    }
 }

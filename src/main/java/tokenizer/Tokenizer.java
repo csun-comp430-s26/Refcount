@@ -21,10 +21,55 @@ public class Tokenizer {
     }
 
     // assumes position is initially in bounds
-    // read symbol tokens,
+    // read symbol tokens
     public Optional<Token> readSymbol() {
         char c = input.charAt(position);
-        return Optional.empty();
+
+        // Two character symbols need to be checked before single character symbols
+        if (position + 1 < input.length()) {
+            char next = input.charAt(position + 1);
+            if (c == '<' && next == '=') {
+                position += 2;
+                return Optional.of(new LessEqualToken());
+            }
+            if (c == '>' && next == '=') {
+                position += 2;
+                return Optional.of(new GreaterEqualToken());
+            }
+            if (c == '=' && next == '=') {
+                position += 2;
+                return Optional.of(new EqualEqualToken());
+            }
+            if (c == '!' && next == '=') {
+                position += 2;
+                return Optional.of(new NotEqualToken());
+            }
+        }
+
+        // Single-character symbols (switch expression: every arm must yield a value)
+        return switch (c) {
+            case '+' -> advance(new PlusToken());
+            case '-' -> advance(new MinusToken());
+            case '*' -> advance(new StarToken());
+            case '/' -> advance(new SlashToken());
+            case '<' -> advance(new LessToken());
+            case '>' -> advance(new GreaterToken());
+            case '=' -> advance(new AssignToken());
+            case '{' -> advance(new LeftBraceToken());
+            case '}' -> advance(new RightBraceToken());
+            case '(' -> advance(new LeftParenToken());
+            case ')' -> advance(new RightParenToken());
+            case ';' -> advance(new SemicolonToken());
+            case ':' -> advance(new ColonToken());
+            case ',' -> advance(new CommaToken());
+            case '.' -> advance(new DotToken());
+            default -> Optional.empty();
+        };
+    }
+
+    private Optional<Token> advance(final Token token) {
+        position++;
+        return Optional.of(token);
     }
 
     // assumes position is initially in bounds
