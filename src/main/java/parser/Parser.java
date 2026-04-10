@@ -33,7 +33,7 @@ public class Parser {
 
     // primaryExp::= i(integer) | `true` | `false` | var | `null` | `(` exp
     // `)`|`new` structname `{` struct_actual_params `}` |funcname `(` comma_exp `)`
-    // intToken trueToken falseToken varToken nullToken parenExp
+    // needs to be implemented but needs parseExp to be implemented first
     public ParseResult<Exp> parsePrimaryExp(final int startPos) throws ParseException {
         final Token firstToken = getToken(startPos);
 
@@ -113,6 +113,8 @@ public class Parser {
     // `{` stmt* `}` | Block
     // `return` [exp] `;` | Return
     // exp `;` Expression statements
+    // needs to be implemented but needs parseExp chain needs to be implemented
+    //
     public ParseResult<Stmt> parseStmt(final int startPos) throws ParseException {
         // still needs to be implemented
         throw new ParseException("parseStmt not implemented yet");
@@ -131,12 +133,44 @@ public class Parser {
     }
 
     // comma_param ::= [param (`,` param)*]
+    public ParseResult<List<Param>> parseCommaParam(final int startPos) throws ParseException {
+        List<Param> params = new ArrayList<>();
+        int currentPos = startPos;
+        // Try to parse the first parameter
+        try {
+            final ParseResult<Param> firstParam = parseParam(currentPos);
+            params.add(firstParam.result());
+            currentPos = firstParam.nextPos();
+
+            // Parse remaining parameters preceded by commas
+            // Use AssertTokenHereIs to check for comma
+            while (currentPos < tokens.size()) {
+                try {
+                    assertTokenHereIs(currentPos, new CommaToken());
+                    final ParseResult<Param> nextParam = parseParam(currentPos + 1);
+                    params.add(nextParam.result());
+                    currentPos = nextParam.nextPos();
+                } catch (Exception e) {
+                    throw new ParseException("Expected comma followed by parameter at position " + currentPos);
+                }
+
+            }
+        } catch (final ParseException e) {
+            // return empty list if no parameters are found, since comma params are optional
+            return new ParseResult<>(new ArrayList<>(), startPos);
+        }
+
+        return new ParseResult<>(params, currentPos);
+    }
 
     // structdef ::= `struct` structname `{` (param `;`)* `}`
+    // needs to be implemented
 
     // fdef ::= `func` funcname `(` comma_param `)` `:` type `{` stmt* `}`
+    // needs to be implemented but needs parseStmt to be implemented first
 
     // struct_actual_param ::= var `:` exp
+    // Test need to be written still but needs ParseExp to be implemented first
     public ParseResult<StructActualParam> parseStructActualParam(final int startPos) throws ParseException {
         // Parse the variable name (identifier)
         final Token varToken = getToken(startPos);
@@ -153,6 +187,7 @@ public class Parser {
     }
 
     // struct_actual_params ::= [struct_actual_param (`,` struct_actual_param)*]
+    // Test need to be written still but needs ParseExp to be implemented first
     public ParseResult<List<StructActualParam>> parseStructActualParams(final int startPos) throws ParseException {
         List<StructActualParam> params = new ArrayList<>();
         int currentPos = startPos;
@@ -177,12 +212,45 @@ public class Parser {
 
             }
         } catch (final ParseException e) {
-            throw new ParseException("Expected struct actual parameter after comma at position " + (currentPos + 1));
+            // return empty list if no parameters are found, since struct actual params are
+            // optional
+            return new ParseResult<>(new ArrayList<>(), startPos);
         }
 
         return new ParseResult<>(params, currentPos);
     }
+
     // comma_exp ::= [exp (`,` exp)*]
+    // Cant test needs parseExp chain needs to be implemented
+    public ParseResult<List<Exp>> parseCommaExp(final int startPos) throws ParseException {
+        List<Exp> exps = new ArrayList<>();
+        int currentPos = startPos;
+
+        try {
+            final ParseResult<Exp> firstExp = parseExp(currentPos);
+            exps.add(firstExp.result());
+            currentPos = firstExp.nextPos();
+
+            while (currentPos < tokens.size()) {
+                try {
+                    assertTokenHereIs(currentPos, new CommaToken());
+                    final ParseResult<Exp> nextExp = parseExp(currentPos + 1);
+                    exps.add(nextExp.result());
+                    currentPos = nextExp.nextPos();
+
+                } catch (Exception e) {
+                }
+                final ParseResult<Exp> nextExp = parseExp(currentPos + 1);
+                exps.add(nextExp.result());
+                currentPos = nextExp.nextPos();
+            }
+        } catch (final ParseException e) {
+            // return empty list
+            return new ParseResult<>(new ArrayList<>(), startPos);
+        }
+
+        return new ParseResult<>(exps, currentPos);
+    }
 
     // type ::= `int` | `bool` | `void` | structname |
     public ParseResult<Type> parseType(final int startPos) throws ParseException {

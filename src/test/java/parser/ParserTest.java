@@ -18,6 +18,72 @@ import tokenizer.VoidToken;
 
 public class ParserTest {
 
+    // TESTS FOR parseCommaParam
+    @Test
+    public void testParseCommaParamEmpty() throws ParseException {
+        List<Token> tokens = List.of(); // No tokens
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<Param>> result = parser.parseCommaParam(0);
+
+        assertTrue(result.result().isEmpty());
+        assertEquals(0, result.nextPos());
+    }
+
+    @Test
+    public void testParseCommaParamSingle() throws ParseException {
+        List<Token> tokens = List.of(new IntToken(), new IdentifierToken("x"));
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<Param>> result = parser.parseCommaParam(0);
+
+        assertEquals(1, result.result().size());
+        assertTrue(result.result().get(0).type() instanceof IntType);
+        assertEquals("x", result.result().get(0).identifier());
+        assertEquals(2, result.nextPos());
+    }
+
+    @Test
+    public void testParseCommaParamMultiple() throws ParseException {
+        List<Token> tokens = List.of(
+                new IntToken(), new IdentifierToken("x"),
+                new CommaToken(),
+                new BoolToken(), new IdentifierToken("y"));
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<Param>> result = parser.parseCommaParam(0);
+
+        assertEquals(2, result.result().size());
+        assertTrue(result.result().get(0).type() instanceof IntType);
+        assertEquals("x", result.result().get(0).identifier());
+        assertTrue(result.result().get(1).type() instanceof BoolType);
+        assertEquals("y", result.result().get(1).identifier());
+        assertEquals(5, result.nextPos());
+    }
+
+    // @Test
+    // public void testParseCommaParamTrailingComma() {
+    // List<Token> tokens = List.of(
+    // new IntToken(), new IdentifierToken("x"),
+    // new CommaToken());
+    // Parser parser = new Parser(tokens);
+
+    // assertThrows(ParseException.class, () -> parser.parseCommaParam(0));
+    // }
+
+    // @Test
+    // public void testParseCommaParamInvalidAfterComma() {
+    // List<Token> tokens = List.of(
+    // new IntToken(), new IdentifierToken("x"),
+    // new CommaToken(),
+    // new CommaToken() // Invalid token after comma
+    // );
+    // Parser parser = new Parser(tokens);
+
+    // assertThrows(ParseException.class, () -> parser.parseCommaParam(0));
+    // }
+
+    // END OF TESTS FOR parseCommaParam
     // TESTS FOR assertTokenHereIs
     @Test
     public void testAssertTokenHereIsSuccess() throws ParseException {
