@@ -3,18 +3,40 @@ package parser;
 import java.util.ArrayList;
 import java.util.List;
 
+import tokenizer.AssignToken;
 import tokenizer.BoolToken;
+import tokenizer.BreakToken;
 import tokenizer.ColonToken;
 import tokenizer.CommaToken;
+import tokenizer.DotToken;
+import tokenizer.ElseToken;
+import tokenizer.EqualEqualToken;
 import tokenizer.FalseToken;
+import tokenizer.GreaterEqualToken;
+import tokenizer.GreaterToken;
 import tokenizer.IdentifierToken;
+import tokenizer.IfToken;
 import tokenizer.IntToken;
 import tokenizer.IntegerToken;
+import tokenizer.LeftBraceToken;
 import tokenizer.LeftParenToken;
+import tokenizer.LessEqualToken;
+import tokenizer.LessToken;
+import tokenizer.MinusToken;
+import tokenizer.NotEqualToken;
 import tokenizer.NullToken;
+import tokenizer.PrintlnToken;
+import tokenizer.ReturnToken;
+import tokenizer.RightBraceToken;
+import tokenizer.RightParenToken;
+import tokenizer.SemicolonToken;
+import tokenizer.SlashToken;
+import tokenizer.StarToken;
 import tokenizer.Token;
 import tokenizer.TrueToken;
 import tokenizer.VoidToken;
+import tokenizer.WhileToken;
+import tokenizer.PlusToken;
 
 public class Parser {
     private final List<Token> tokens;
@@ -55,11 +77,12 @@ public class Parser {
             // expresssion inside parens
         } else if (firstToken instanceof LeftParenToken) {
             final ParseResult<Exp> exp = parseExp(startPos + 1);
-
+            assertTokenHereIs(exp.nextPos(), new RightParenToken());
+            return new ParseResult<>(new ParenExp(exp.result()), exp.nextPos() + 1);
         } else {
-            throw new ParseException("Expected primary expression at position " + firstToken.toString());
+            throw new ParseException("Expected primary expression at position " + startPos + "; received: "
+                    + firstToken.toString());
         }
-        throw new ParseException("parsePrimaryExp not finished yet");
     }
 
     // each level uses the previous level to parse its subexpressions, and then
@@ -69,37 +92,110 @@ public class Parser {
 
     // dot_exp ::= primary_exp (`.` var)*
     public ParseResult<Exp> parseDotExp(final int startPos) throws ParseException {
-        // still needs to be implemented
-        throw new ParseException("parseDotExp not implemented yet");
+        ParseResult<Exp> current = parsePrimaryExp(startPos);
+        int pos = current.nextPos();
+        while (pos < tokens.size() && getToken(pos) instanceof DotToken) {
+            pos++;
+            final Token fieldTok = getToken(pos);
+            if (!(fieldTok instanceof IdentifierToken id)) {
+                throw new ParseException("Expected field name after '.' at position " + pos);
+            }
+            current = new ParseResult<>(new DotExp(current.result(), id.name()), pos + 1);
+            pos = current.nextPos();
+        }
+        return current;
     }
 
     // mult_exp ::= dot_exp ((`*` | `/`) dot_exp)*
     public ParseResult<Exp> parseMultExp(final int startPos) throws ParseException {
-        // still needs to be implemented
-        throw new ParseException("parseMultExp not implemented yet");
+        ParseResult<Exp> left = parseDotExp(startPos);
+        int pos = left.nextPos();
+        while (pos < tokens.size()) {
+            final Token opTok = getToken(pos);
+            final Op op;
+            if (opTok instanceof StarToken) {
+                op = new TimesOp();
+            } else if (opTok instanceof SlashToken) {
+                op = new DivideOp();
+            } else {
+                break;
+            }
+            final ParseResult<Exp> right = parseDotExp(pos + 1);
+            left = new ParseResult<>(new BinopExp(left.result(), op, right.result()), right.nextPos());
+            pos = left.nextPos();
+        }
+        return left;
     }
 
-    // add_exp ::= mult_exp ::= dot_exp ((`+` | `-`) mult_exp)*
+    // add_exp ::= mult_exp ((`+` | `-`) mult_exp)*
     public ParseResult<Exp> parseAddExp(final int startPos) throws ParseException {
-        // still needs to be implemented
-        throw new ParseException("parseAddExp not implemented yet");
+        ParseResult<Exp> left = parseMultExp(startPos);
+        int pos = left.nextPos();
+        while (pos < tokens.size()) {
+            final Token opTok = getToken(pos);
+            final Op op;
+            if (opTok instanceof PlusToken) {
+                op = new PlusOp();
+            } else if (opTok instanceof MinusToken) {
+                op = new MinusOp();
+            } else {
+                break;
+            }
+            final ParseResult<Exp> right = parseMultExp(pos + 1);
+            left = new ParseResult<>(new BinopExp(left.result(), op, right.result()), right.nextPos());
+            pos = left.nextPos();
+        }
+        return left;
     }
 
-    // less_than_exp ::= add_exp [`<` add_exp]*
+    // relational_exp ::= add_exp ( (`<` | `<=` | `>` | `>=`) add_exp )*
     public ParseResult<Exp> parseLessThanExp(final int startPos) throws ParseException {
-        // still needs to be implemented
-        throw new ParseException("parseLessThanExp not implemented yet");
+        ParseResult<Exp> left = parseAddExp(startPos);
+        int pos = left.nextPos();
+        while (pos < tokens.size()) {
+            final Token opTok = getToken(pos);
+            final Op op;
+            if (opTok instanceof LessToken) {
+                op = new LessThanOp();
+            } else if (opTok instanceof LessEqualToken) {
+                op = new LessEqualOp();
+            } else if (opTok instanceof GreaterToken) {
+                op = new GreaterThanOp();
+            } else if (opTok instanceof GreaterEqualToken) {
+                op = new GreaterEqualOp();
+            } else {
+                break;
+            }
+            final ParseResult<Exp> right = parseAddExp(pos + 1);
+            left = new ParseResult<>(new BinopExp(left.result(), op, right.result()), right.nextPos());
+            pos = left.nextPos();
+        }
+        return left;
     }
 
     // equals_exp ::= less_than_exp ((`==` | `!=`) less_than_exp)*
     public ParseResult<Exp> parseEqualsExp(final int startPos) throws ParseException {
-        // still needs to be implemented
-        throw new ParseException("parseEqualsExp not implemented yet");
+        ParseResult<Exp> left = parseLessThanExp(startPos);
+        int pos = left.nextPos();
+        while (pos < tokens.size()) {
+            final Token opTok = getToken(pos);
+            final Op op;
+            if (opTok instanceof EqualEqualToken) {
+                op = new EqualEqualOp();
+            } else if (opTok instanceof NotEqualToken) {
+                op = new NotEqualOp();
+            } else {
+                break;
+            }
+            final ParseResult<Exp> right = parseLessThanExp(pos + 1);
+            left = new ParseResult<>(new BinopExp(left.result(), op, right.result()), right.nextPos());
+            pos = left.nextPos();
+        }
+        return left;
     }
 
     // parseExp: exp ::= equals_exp
     public ParseResult<Exp> parseExp(final int startPos) throws ParseException {
-        // still needs to be implemented
         return parseEqualsExp(startPos);
     }
 
@@ -113,11 +209,102 @@ public class Parser {
     // `{` stmt* `}` | Block
     // `return` [exp] `;` | Return
     // exp `;` Expression statements
-    // needs to be implemented but needs parseExp chain needs to be implemented
-    //
     public ParseResult<Stmt> parseStmt(final int startPos) throws ParseException {
-        // still needs to be implemented
-        throw new ParseException("parseStmt not implemented yet");
+        final Token first = getToken(startPos);
+
+        if (first instanceof LeftBraceToken) {
+            final List<Stmt> body = new ArrayList<>();
+            int pos = startPos + 1;
+            while (!(getToken(pos) instanceof RightBraceToken)) {
+                final ParseResult<Stmt> inner = parseStmt(pos);
+                body.add(inner.result());
+                pos = inner.nextPos();
+            }
+            return new ParseResult<>(new BlockStmt(body), pos + 1);
+        }
+
+        if (first instanceof IfToken) {
+            assertTokenHereIs(startPos + 1, new LeftParenToken());
+            final ParseResult<Exp> cond = parseExp(startPos + 2);
+            assertTokenHereIs(cond.nextPos(), new RightParenToken());
+            final ParseResult<Stmt> thenBranch = parseStmt(cond.nextPos() + 1);
+            int afterThen = thenBranch.nextPos();
+            if (afterThen < tokens.size() && getToken(afterThen) instanceof ElseToken) {
+                final ParseResult<Stmt> elseBranch = parseStmt(afterThen + 1);
+                return new ParseResult<>(new IfStmt(cond.result(), thenBranch.result(), elseBranch.result()),
+                        elseBranch.nextPos());
+            }
+            return new ParseResult<>(new IfStmt(cond.result(), thenBranch.result()), afterThen);
+        }
+
+        if (first instanceof WhileToken) {
+            assertTokenHereIs(startPos + 1, new LeftParenToken());
+            final ParseResult<Exp> cond = parseExp(startPos + 2);
+            assertTokenHereIs(cond.nextPos(), new RightParenToken());
+            final ParseResult<Stmt> body = parseStmt(cond.nextPos() + 1);
+            return new ParseResult<>(new WhileStmt(cond.result(), body.result()), body.nextPos());
+        }
+
+        if (first instanceof BreakToken) {
+            assertTokenHereIs(startPos + 1, new SemicolonToken());
+            return new ParseResult<>(new BreakStmt(), startPos + 2);
+        }
+
+        if (first instanceof PrintlnToken) {
+            assertTokenHereIs(startPos + 1, new LeftParenToken());
+            final ParseResult<Exp> arg = parseExp(startPos + 2);
+            assertTokenHereIs(arg.nextPos(), new RightParenToken());
+            assertTokenHereIs(arg.nextPos() + 1, new SemicolonToken());
+            return new ParseResult<>(new PrintlnStmt(arg.result()), arg.nextPos() + 2);
+        }
+
+        if (first instanceof ReturnToken) {
+            if (startPos + 1 < tokens.size() && getToken(startPos + 1) instanceof SemicolonToken) {
+                return new ParseResult<>(new ReturnStmt(null), startPos + 2);
+            }
+            final ParseResult<Exp> value = parseExp(startPos + 1);
+            assertTokenHereIs(value.nextPos(), new SemicolonToken());
+            return new ParseResult<>(new ReturnStmt(value.result()), value.nextPos() + 1);
+        }
+
+        if (first instanceof IntToken || first instanceof BoolToken || first instanceof VoidToken) {
+            final ParseResult<Type> typeRes = parseType(startPos);
+            final Token nameTok = getToken(typeRes.nextPos());
+            if (!(nameTok instanceof IdentifierToken id)) {
+                throw new ParseException("Expected identifier after type at position " + typeRes.nextPos());
+            }
+            assertTokenHereIs(typeRes.nextPos() + 1, new AssignToken());
+            final ParseResult<Exp> init = parseExp(typeRes.nextPos() + 2);
+            assertTokenHereIs(init.nextPos(), new SemicolonToken());
+            return new ParseResult<>(new VarDeclStmt(typeRes.result(), id.name(), init.result()),
+                    init.nextPos() + 1);
+        }
+
+        if (first instanceof IdentifierToken idFirst) {
+            if (startPos + 2 < tokens.size()
+                    && getToken(startPos + 1) instanceof IdentifierToken idSecond
+                    && getToken(startPos + 2) instanceof AssignToken) {
+                final ParseResult<Type> structType = parseType(startPos);
+                final Token nameTok = getToken(structType.nextPos());
+                if (!(nameTok instanceof IdentifierToken varName)) {
+                    throw new ParseException("Expected variable name at position " + structType.nextPos());
+                }
+                assertTokenHereIs(structType.nextPos() + 1, new AssignToken());
+                final ParseResult<Exp> init = parseExp(structType.nextPos() + 2);
+                assertTokenHereIs(init.nextPos(), new SemicolonToken());
+                return new ParseResult<>(new VarDeclStmt(structType.result(), varName.name(), init.result()),
+                        init.nextPos() + 1);
+            }
+            if (startPos + 1 < tokens.size() && getToken(startPos + 1) instanceof AssignToken) {
+                final ParseResult<Exp> rhs = parseExp(startPos + 2);
+                assertTokenHereIs(rhs.nextPos(), new SemicolonToken());
+                return new ParseResult<>(new AssignStmt(idFirst.name(), rhs.result()), rhs.nextPos() + 1);
+            }
+        }
+
+        final ParseResult<Exp> exp = parseExp(startPos);
+        assertTokenHereIs(exp.nextPos(), new SemicolonToken());
+        return new ParseResult<>(new ExprStmt(exp.result()), exp.nextPos() + 1);
     }
 
     // param :: = type var
