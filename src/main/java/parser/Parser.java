@@ -13,6 +13,7 @@ import tokenizer.ElseToken;
 import tokenizer.EqualEqualToken;
 import tokenizer.FalseToken;
 import tokenizer.FuncToken;
+import tokenizer.FuncToken;
 import tokenizer.GreaterEqualToken;
 import tokenizer.GreaterToken;
 import tokenizer.IdentifierToken;
@@ -27,6 +28,7 @@ import tokenizer.MinusToken;
 import tokenizer.NewToken;
 import tokenizer.NotEqualToken;
 import tokenizer.NullToken;
+import tokenizer.PlusToken;
 import tokenizer.PlusToken;
 import tokenizer.PrintlnToken;
 import tokenizer.ReturnToken;
@@ -334,6 +336,7 @@ public class Parser {
     // param :: = type var
     public ParseResult<Param> parseParam(final int startPos) throws ParseException {
         // get the type first
+        // get the type first
         final ParseResult<Type> typeRes = parseType(startPos);
 
         final Token varToken = getToken(typeRes.nextPos());
@@ -345,6 +348,7 @@ public class Parser {
     }
 
     // comma_param ::= [param (`,` param)*]
+
 
     public ParseResult<List<Param>> parseCommaParam(final int startPos) throws ParseException {
         if (startPos >= tokens.size()) {
