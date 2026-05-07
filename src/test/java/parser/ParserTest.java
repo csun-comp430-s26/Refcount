@@ -17,6 +17,7 @@ import tokenizer.DotToken;
 import tokenizer.ElseToken;
 import tokenizer.EqualEqualToken;
 import tokenizer.FalseToken;
+import tokenizer.FuncToken;
 import tokenizer.GreaterEqualToken;
 import tokenizer.GreaterToken;
 import tokenizer.IdentifierToken;
@@ -28,6 +29,7 @@ import tokenizer.LeftParenToken;
 import tokenizer.LessEqualToken;
 import tokenizer.LessToken;
 import tokenizer.MinusToken;
+import tokenizer.NewToken;
 import tokenizer.NotEqualToken;
 import tokenizer.NullToken;
 import tokenizer.PlusToken;
@@ -38,6 +40,7 @@ import tokenizer.RightParenToken;
 import tokenizer.SemicolonToken;
 import tokenizer.SlashToken;
 import tokenizer.StarToken;
+import tokenizer.StructToken;
 import tokenizer.Token;
 import tokenizer.TrueToken;
 import tokenizer.VoidToken;
@@ -391,26 +394,22 @@ public class ParserTest {
 
     // TESTS FOR parseLessThanExp (relational)
     @Test
-    public void testParseLessThanExpOperators() throws ParseException {
+    public void testParseRelationalSingleCompare() throws ParseException {
         List<Token> tokens = List.of(
                 new IntegerToken(1),
-                new LessToken(),
-                new IntegerToken(2),
                 new LessEqualToken(),
-                new IntegerToken(2),
-                new GreaterToken(),
-                new IntegerToken(0),
-                new GreaterEqualToken(),
-                new IntegerToken(0));
+                new IntegerToken(2));
         Parser parser = new Parser(tokens);
 
-        ParseResult<Exp> result = parser.parseLessThanExp(0);
+        ParseResult<Exp> result = parser.parseRelationalExp(0);
 
         Exp root = result.result();
         assertTrue(root instanceof BinopExp);
-        BinopExp ge = (BinopExp) root;
-        assertTrue(ge.op() instanceof GreaterEqualOp);
-        assertEquals(9, result.nextPos());
+        BinopExp le = (BinopExp) root;
+        assertTrue(le.op() instanceof LessEqualOp);
+        assertTrue(le.left() instanceof IntegerExp);
+        assertTrue(le.right() instanceof IntegerExp);
+        assertEquals(3, result.nextPos());
     }
 
     // END OF TESTS FOR parseLessThanExp
@@ -708,5 +707,265 @@ public class ParserTest {
     }
 
     // END OF TESTS FOR parseStmt
+
+    @Test
+    public void testParseCommaExpEmpty() throws ParseException {
+        List<Token> tokens = List.of(new RightParenToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<Exp>> result = parser.parseCommaExp(0);
+
+        assertTrue(result.result().isEmpty());
+        assertEquals(0, result.nextPos());
+    }
+
+    @Test
+    public void testParseCommaExpTwoArgs() throws ParseException {
+        List<Token> tokens = List.of(
+                new IntegerToken(1),
+                new CommaToken(),
+                new TrueToken(),
+                new RightParenToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<Exp>> result = parser.parseCommaExp(0);
+
+        assertEquals(2, result.result().size());
+        assertTrue(result.result().get(0) instanceof IntegerExp);
+        assertTrue(result.result().get(1) instanceof TrueExp);
+        assertEquals(3, result.nextPos());
+    }
+
+    @Test
+    public void testParseStructActualParamsEmpty() throws ParseException {
+        List<Token> tokens = List.of(new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<StructActualParam>> result = parser.parseStructActualParams(0);
+
+        assertTrue(result.result().isEmpty());
+        assertEquals(0, result.nextPos());
+    }
+
+    @Test
+    public void testParseStructActualParamsTwo() throws ParseException {
+        List<Token> tokens = List.of(
+                new IdentifierToken("a"),
+                new ColonToken(),
+                new IntegerToken(0),
+                new CommaToken(),
+                new IdentifierToken("b"),
+                new ColonToken(),
+                new FalseToken(),
+                new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<List<StructActualParam>> result = parser.parseStructActualParams(0);
+
+        assertEquals(2, result.result().size());
+        assertEquals("a", result.result().get(0).identifier());
+        assertEquals("b", result.result().get(1).identifier());
+        assertEquals(7, result.nextPos());
+    }
+
+    @Test
+    public void testParsePrimaryExpNewEmpty() throws ParseException {
+        List<Token> tokens = List.of(
+                new NewToken(),
+                new IdentifierToken("Node"),
+                new LeftBraceToken(),
+                new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<Exp> result = parser.parsePrimaryExp(0);
+
+        assertTrue(result.result() instanceof NewExp);
+        NewExp ne = (NewExp) result.result();
+        assertEquals("Node", ne.structName());
+        assertTrue(ne.fields().isEmpty());
+        assertEquals(4, result.nextPos());
+    }
+
+    @Test
+    public void testParsePrimaryExpCallEmpty() throws ParseException {
+        List<Token> tokens = List.of(
+                new IdentifierToken("length"),
+                new LeftParenToken(),
+                new RightParenToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<Exp> result = parser.parsePrimaryExp(0);
+
+        assertTrue(result.result() instanceof CallExp);
+        CallExp call = (CallExp) result.result();
+        assertEquals("length", call.funcName());
+        assertTrue(call.arguments().isEmpty());
+        assertEquals(3, result.nextPos());
+    }
+
+    @Test
+    public void testParsePrimaryExpCallTwoArgs() throws ParseException {
+        List<Token> tokens = List.of(
+                new IdentifierToken("f"),
+                new LeftParenToken(),
+                new IntegerToken(1),
+                new CommaToken(),
+                new IntegerToken(2),
+                new RightParenToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<Exp> result = parser.parsePrimaryExp(0);
+
+        assertTrue(result.result() instanceof CallExp);
+        CallExp call = (CallExp) result.result();
+        assertEquals(2, call.arguments().size());
+        assertEquals(6, result.nextPos());
+    }
+
+    @Test
+    public void testParseStructDefMinimal() throws ParseException {
+        List<Token> tokens = List.of(
+                new StructToken(),
+                new IdentifierToken("S"),
+                new LeftBraceToken(),
+                new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<StructDef> result = parser.parseStructDef(0);
+
+        assertEquals("S", result.result().name());
+        assertTrue(result.result().fields().isEmpty());
+        assertEquals(4, result.nextPos());
+    }
+
+    @Test
+    public void testParseStructDefFields() throws ParseException {
+        List<Token> tokens = List.of(
+                new StructToken(),
+                new IdentifierToken("Node"),
+                new LeftBraceToken(),
+                new IntToken(),
+                new IdentifierToken("value"),
+                new SemicolonToken(),
+                new IdentifierToken("Node"),
+                new IdentifierToken("rest"),
+                new SemicolonToken(),
+                new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<StructDef> result = parser.parseStructDef(0);
+
+        assertEquals("Node", result.result().name());
+        assertEquals(2, result.result().fields().size());
+        assertEquals("value", result.result().fields().get(0).identifier());
+        assertEquals("rest", result.result().fields().get(1).identifier());
+        assertEquals(10, result.nextPos());
+    }
+
+    @Test
+    public void testParseFuncDefEmptyBody() throws ParseException {
+        List<Token> tokens = List.of(
+                new FuncToken(),
+                new IdentifierToken("f"),
+                new LeftParenToken(),
+                new RightParenToken(),
+                new ColonToken(),
+                new VoidToken(),
+                new LeftBraceToken(),
+                new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<FuncDef> result = parser.parseFuncDef(0);
+
+        assertEquals("f", result.result().name());
+        assertTrue(result.result().parameters().isEmpty());
+        assertTrue(result.result().returnType() instanceof VoidType);
+        assertTrue(result.result().body().isEmpty());
+        assertEquals(8, result.nextPos());
+    }
+
+    @Test
+    public void testParseFuncDefOneStmt() throws ParseException {
+        List<Token> tokens = List.of(
+                new FuncToken(),
+                new IdentifierToken("g"),
+                new LeftParenToken(),
+                new IntToken(),
+                new IdentifierToken("x"),
+                new RightParenToken(),
+                new ColonToken(),
+                new IntToken(),
+                new LeftBraceToken(),
+                new ReturnToken(),
+                new IdentifierToken("x"),
+                new SemicolonToken(),
+                new RightBraceToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<FuncDef> result = parser.parseFuncDef(0);
+
+        assertEquals("g", result.result().name());
+        assertEquals(1, result.result().parameters().size());
+        assertEquals(1, result.result().body().size());
+        assertTrue(result.result().body().get(0) instanceof ReturnStmt);
+        assertEquals(13, result.nextPos());
+    }
+
+    @Test
+    public void testParseProgramStructFuncAndStmt() throws ParseException {
+        List<Token> tokens = List.of(
+                new StructToken(),
+                new IdentifierToken("Node"),
+                new LeftBraceToken(),
+                new IntToken(),
+                new IdentifierToken("v"),
+                new SemicolonToken(),
+                new RightBraceToken(),
+                new FuncToken(),
+                new IdentifierToken("id"),
+                new LeftParenToken(),
+                new IdentifierToken("Node"),
+                new IdentifierToken("n"),
+                new RightParenToken(),
+                new ColonToken(),
+                new IdentifierToken("Node"),
+                new LeftBraceToken(),
+                new ReturnToken(),
+                new IdentifierToken("n"),
+                new SemicolonToken(),
+                new RightBraceToken(),
+                new IntToken(),
+                new IdentifierToken("a"),
+                new AssignToken(),
+                new IntegerToken(1),
+                new SemicolonToken());
+        Parser parser = new Parser(tokens);
+
+        Program program = parser.parseProgram();
+
+        assertEquals(1, program.structDefs().size());
+        assertEquals("Node", program.structDefs().get(0).name());
+        assertEquals(1, program.funcDefs().size());
+        assertEquals("id", program.funcDefs().get(0).name());
+        assertEquals(1, program.stmts().size());
+        assertTrue(program.stmts().get(0) instanceof VarDeclStmt);
+    }
+
+    @Test
+    public void testParseStmtCallExpressionStatement() throws ParseException {
+        List<Token> tokens = List.of(
+                new IdentifierToken("f"),
+                new LeftParenToken(),
+                new RightParenToken(),
+                new SemicolonToken());
+        Parser parser = new Parser(tokens);
+
+        ParseResult<Stmt> result = parser.parseStmt(0);
+
+        assertTrue(result.result() instanceof ExprStmt);
+        ExprStmt es = (ExprStmt) result.result();
+        assertTrue(es.expression() instanceof CallExp);
+        assertEquals(4, result.nextPos());
+    }
 
 }
