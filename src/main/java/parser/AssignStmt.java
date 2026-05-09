@@ -1,5 +1,5 @@
 package parser;
 
-public record AssignStmt(String variable, Exp expression) implements Stmt {
+public record AssignStmt(Identifier variable, Exp expression) implements Stmt {
 
 }

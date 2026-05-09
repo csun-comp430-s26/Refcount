@@ -13,7 +13,6 @@ import tokenizer.ElseToken;
 import tokenizer.EqualEqualToken;
 import tokenizer.FalseToken;
 import tokenizer.FuncToken;
-import tokenizer.FuncToken;
 import tokenizer.GreaterEqualToken;
 import tokenizer.GreaterToken;
 import tokenizer.IdentifierToken;
@@ -28,7 +27,6 @@ import tokenizer.MinusToken;
 import tokenizer.NewToken;
 import tokenizer.NotEqualToken;
 import tokenizer.NullToken;
-import tokenizer.PlusToken;
 import tokenizer.PlusToken;
 import tokenizer.PrintlnToken;
 import tokenizer.ReturnToken;
@@ -78,11 +76,12 @@ public class Parser {
             return new ParseResult<>(new IntegerExp(intToken.value()), startPos + 1);
 
         } else if (firstToken instanceof TrueToken) {
-            return new ParseResult<>(new TrueExp(), startPos + 1);
+            return new ParseResult<>(new BoolExp(true), startPos + 1);
 
         } else if (firstToken instanceof FalseToken) {
-            return new ParseResult<>(new FalseExp(), startPos + 1);
+            return new ParseResult<>(new BoolExp(false), startPos + 1);
 
+            // structname declaration
         } else if (firstToken instanceof NewToken) {
             final Token structNameTok = getToken(startPos + 1);
             if (!(structNameTok instanceof IdentifierToken id)) {
@@ -101,7 +100,7 @@ public class Parser {
                 assertTokenHereIs(args.nextPos(), new RightParenToken());
                 return new ParseResult<>(new CallExp(varToken.name(), args.result()), args.nextPos() + 1);
             }
-            return new ParseResult<>(new IdentifierExp(varToken.name()), startPos + 1);
+            return new ParseResult<>(new IdentifierExp(new Identifier(varToken.name())), startPos + 1);
 
         } else if (firstToken instanceof NullToken) {
             return new ParseResult<>(new NullExp(), startPos + 1);
@@ -177,7 +176,8 @@ public class Parser {
         return left;
     }
 
-    // relational_exp ::= add_exp ( (`<` | `<=` | `>` | `>=`) add_exp )  (at most one compare; PDF)
+    // relational_exp ::= add_exp ( (`<` | `<=` | `>` | `>=`) add_exp ) (at most one
+    // compare; PDF)
     public ParseResult<Exp> parseRelationalExp(final int startPos) throws ParseException {
         final ParseResult<Exp> left = parseAddExp(startPos);
         final int pos = left.nextPos();
@@ -302,7 +302,7 @@ public class Parser {
             assertTokenHereIs(typeRes.nextPos() + 1, new AssignToken());
             final ParseResult<Exp> init = parseExp(typeRes.nextPos() + 2);
             assertTokenHereIs(init.nextPos(), new SemicolonToken());
-            return new ParseResult<>(new VarDeclStmt(typeRes.result(), id.name(), init.result()),
+            return new ParseResult<>(new VarDeclStmt(typeRes.result(), new Identifier(id.name()), init.result()),
                     init.nextPos() + 1);
         }
 
@@ -318,13 +318,15 @@ public class Parser {
                 assertTokenHereIs(structType.nextPos() + 1, new AssignToken());
                 final ParseResult<Exp> init = parseExp(structType.nextPos() + 2);
                 assertTokenHereIs(init.nextPos(), new SemicolonToken());
-                return new ParseResult<>(new VarDeclStmt(structType.result(), varName.name(), init.result()),
+                return new ParseResult<>(
+                        new VarDeclStmt(structType.result(), new Identifier(varName.name()), init.result()),
                         init.nextPos() + 1);
             }
             if (startPos + 1 < tokens.size() && getToken(startPos + 1) instanceof AssignToken) {
                 final ParseResult<Exp> rhs = parseExp(startPos + 2);
                 assertTokenHereIs(rhs.nextPos(), new SemicolonToken());
-                return new ParseResult<>(new AssignStmt(idFirst.name(), rhs.result()), rhs.nextPos() + 1);
+                return new ParseResult<>(new AssignStmt(new Identifier(idFirst.name()), rhs.result()),
+                        rhs.nextPos() + 1);
             }
         }
 
@@ -348,7 +350,6 @@ public class Parser {
     }
 
     // comma_param ::= [param (`,` param)*]
-
 
     public ParseResult<List<Param>> parseCommaParam(final int startPos) throws ParseException {
         if (startPos >= tokens.size()) {
