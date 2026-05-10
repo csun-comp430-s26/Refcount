@@ -5,15 +5,19 @@ import java.util.Map;
 
 import parser.AssignStmt;
 import parser.BinopExp;
+import parser.BlockStmt;
 import parser.BoolExp;
 import parser.BoolType;
+import parser.BreakStmt;
 import parser.DivideOp;
 import parser.EqualEqualOp;
 import parser.Exp;
+import parser.ExprStmt;
 import parser.GreaterEqualOp;
 import parser.GreaterThanOp;
 import parser.Identifier;
 import parser.IdentifierExp;
+import parser.IfStmt;
 import parser.IntType;
 import parser.IntegerExp;
 import parser.LessEqualOp;
@@ -21,10 +25,14 @@ import parser.LessThanOp;
 import parser.MinusOp;
 import parser.NotEqualOp;
 import parser.PlusOp;
+import parser.PrintlnStmt;
+import parser.ReturnStmt;
 import parser.Stmt;
 import parser.TimesOp;
 import parser.Type;
 import parser.VarDeclStmt;
+import parser.VoidType;
+import parser.WhileStmt;
 
 public class Typechecker {
 
@@ -76,6 +84,8 @@ public class Typechecker {
                         " is ill typed");
             }
 
+        } else if (exp instanceof NullExp) {
+            return new NullType();
         } else {
             throw new TypeErrorException("Unrecognized expression: " + exp);
         }
@@ -119,13 +129,88 @@ public class Typechecker {
         }
     }
 
+    // helper function for while statments
+    public static Map<Identifier, Type> typecheckWhile(final WhileStmt stmt, final Map<Identifier, Type> typeEnv,
+            final boolean inLoop, final Type expectedReturnType)
+            throws TypeErrorException {
+        assertTypesEqual(new BoolType(), typeof(stmt.condition(), typeEnv));
+        typecheckStmt(stmt.body(), typeEnv, true, expectedReturnType);
+        return typeEnv;
+    }
+
+    // helper function for If statments
+    public static Map<Identifier, Type> typecheckIf(final IfStmt stmt, final Map<Identifier, Type> typeEnv,
+            final boolean inLoop, final Type expectedReturnType)
+            throws TypeErrorException {
+        //
+        assertTypesEqual(new BoolType(), typeof(stmt.condition(), typeEnv));
+        typecheckStmt(stmt.thenBranch(), typeEnv, inLoop, expectedReturnType);
+        if (stmt.elseBranch() != null) {
+            typecheckStmt(stmt.elseBranch(), typeEnv, inLoop, expectedReturnType);
+        }
+
+        return typeEnv;
+    }
+
+    // helper for Block Stmt
+    public static Map<Identifier, Type> typecheckBlock(final BlockStmt stmt, final Map<Identifier, Type> typeEnv,
+            final boolean inLoop, final Type expectedReturnType) throws TypeErrorException {
+        Map<Identifier, Type> localEnv = typeEnv;
+
+        for (final Stmt innerStmt : stmt.body()) {
+            localEnv = typecheckStmt(innerStmt, localEnv, inLoop, expectedReturnType);
+        }
+
+        return typeEnv;
+    }
+
+    // helper for Return Stmt
+    public static void typecheckReturn(
+            final ReturnStmt stmt,
+            final Map<Identifier, Type> typeEnv,
+            final Type expectedReturnType)
+            throws TypeErrorException {
+
+        if (stmt.value() == null) {
+            if (!(expectedReturnType instanceof VoidType)) {
+                throw new TypeErrorException(
+                        "Expected return of type " + expectedReturnType);
+            }
+        } else {
+            Type actual = typeof(stmt.value(), typeEnv);
+            assertTypesEqual(expectedReturnType, actual);
+        }
+    }
+
     // check statments
-    public static Map<Identifier, Type> TypecheckStmt(final Stmt stmt, final Map<Identifier, Type> typeEnv)
+    public static Map<Identifier, Type> typecheckStmt(final Stmt stmt, final Map<Identifier, Type> typeEnv,
+            final boolean inLoop, final Type expectedReturnType)
             throws TypeErrorException {
         if (stmt instanceof VarDeclStmt) {
             return typecheckVarDecl((VarDeclStmt) stmt, typeEnv);
         } else if (stmt instanceof AssignStmt) {
-
+            return typecheckAssign((AssignStmt) stmt, typeEnv);
+        } else if (stmt instanceof WhileStmt) {
+            return typecheckWhile((WhileStmt) stmt, typeEnv, inLoop, expectedReturnType);
+        } else if (stmt instanceof IfStmt) {
+            return typecheckIf((IfStmt) stmt, typeEnv, inLoop, expectedReturnType);
+        } else if (stmt instanceof BreakStmt) {
+            if (inLoop) {
+                return typeEnv;
+            } else {
+                throw new TypeErrorException("Break outside of Loop");
+            }
+        } else if (stmt instanceof PrintlnStmt printlnStmt) {
+            typeof(printlnStmt.expression(), typeEnv);
+            return typeEnv;
+        } else if (stmt instanceof BlockStmt) {
+            return typecheckBlock((BlockStmt) stmt, typeEnv, inLoop, expectedReturnType);
+        } else if (stmt instanceof ReturnStmt) {
+            typecheckReturn((ReturnStmt) stmt, typeEnv, expectedReturnType);
+            return typeEnv;
+        } else if (stmt instanceof ExprStmt expStmt) {
+            typeof(expStmt.expression(), typeEnv);
+            return typeEnv;
         } else {
             assert (false);
             throw new TypeErrorException("Unrecognized statement: " + stmt);
