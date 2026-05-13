@@ -23,7 +23,28 @@ Erick:
 
 ## Code Snippets
 
-TODO
+> The tokenizer checks for <=, >=, ==, and != before checking any single-characters. Otherwise, symbols like <= would be read as the less than token and then fail right after.
+```java
+  if (position + 1 < input.length()) {                                                                                                                                         
+      char next = input.charAt(position + 1);                                                                                                                                  
+      if (c == '<' && next == '=') {                                                                                                                                           
+          position += 2;                                                                                                                                                       
+          return Optional.of(new LessEqualToken());                                                                                                                            
+      }                                                                                                                                                                        
+      if (c == '>' && next == '=') {                                                                                                                                           
+          position += 2;                                                                                                                                                       
+          return Optional.of(new GreaterEqualToken());                                                                                                                         
+      }                                                                                                                                                                        
+      if (c == '=' && next == '=') {                                                                                                                                           
+          position += 2;                                                                                                                                                       
+          return Optional.of(new EqualEqualToken());
+      }                                                                                                                                                                        
+      if (c == '!' && next == '=') {                                                                                                                                           
+          position += 2;                                                                                                                                                       
+          return Optional.of(new NotEqualToken());                                                                                                                             
+      }                                                                                                                                                                        
+  }
+```
 
 ## Known Limitations
 
@@ -39,7 +60,7 @@ TODO
 
 Erick:
 
-Chris: 
+Chris:
 
 ### Would you choose a different development tool?
 
