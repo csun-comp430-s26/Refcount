@@ -1,5 +1,5 @@
 package parser;
 
-public record IdentifierExp(String identifier) implements Exp {
+public record IdentifierExp(Identifier name) implements Exp {
 
 }
