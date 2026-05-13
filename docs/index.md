@@ -13,11 +13,11 @@
 **Repository:** https://github.com/csun-comp430-s26/Refcount
 
 **Overview:**
-TODO
+C-Heap is a language focused on structs, heap allocation, and automatic memory reclamation through reference counting. The language is designed to be easy to read while still supporting meaningful data structures such as linked lists and nested structs. C-Heap compiles into C.
 
 ## Why This Language?
 
-Chris: 
+Chris: While looking through all the proposals, one of the requirements I gave myself was an easy to understand syntax when writing the language. I really disliked the way that S-expressions looked so I avoided any proposals that utilized them. The idea that all the structs are heap-allocated also interested me since it would give me an opportunity to understand heaps more. I also enjoy C as a language, so making a language that compiles to C sounded neat.
 
 Erick: 
 
@@ -27,15 +27,39 @@ TODO
 
 ## Known Limitations
 
-TODO
+- Structs are immutable (by design)
+- Structs are heap allocated
+- All structs are heap allocated
+- No strings, characters, floats, or arrays
+- No generics, interfaces, type inferences, or function types
 
 ## Lessons Learned
 
-TODO
+### Would you design anything differently?
+
+Erick:
+
+Chris:
+
+### Would you choose a different development tool?
+
+Erick:
+
+Chris: I personally used VS Code, which was effective enough to not make me want to switch to a much more powerful IDE
+
+### Would you choose a different target language?
+
+Erick:
+
+Chris: C is one of my favorite languages and one of the reasons I chose this langauge, so no.
+
+### Would you change anything about how you communicated within the group
+
+Erick:
+
+Chris: Communication was a bit rocky at the start as there was some confusion on who was in our group, but overall it worked out fine. We agreed on what each person is working on and then executed it affectively
 
 ## Building the Compiler
-
-TODO
 
 Prerequisites:
 
