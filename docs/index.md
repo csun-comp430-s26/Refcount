@@ -39,7 +39,7 @@ TODO
 
 Erick:
 
-Chris:
+Chris: 
 
 ### Would you choose a different development tool?
 
@@ -57,7 +57,7 @@ Chris: C is one of my favorite languages and one of the reasons I chose this lan
 
 Erick:
 
-Chris: Communication was a bit rocky at the start as there was some confusion on who was in our group, but overall it worked out fine. We agreed on what each person is working on and then executed it affectively
+Chris: Communication was a bit rocky at the start as there was some confusion on who was in our group, but overall it worked out fine. We agreed on what each person is working on and then executed it effectively.
 
 ## Building the Compiler
 
