@@ -1,5 +1,3 @@
-# C-Heap Language Documentation
-
 ## Project Summary
 
 **Language name:** C-Heap
