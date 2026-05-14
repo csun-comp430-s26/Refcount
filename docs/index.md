@@ -42,7 +42,7 @@ Erick: I liked this language because I have used C before in my operating system
       }                                                                                                                                                                        
   }
 ```
-> Code from Typechecker for checking the while statments. In this case we had to create a Bool variable called 'inLoop' that would be passed to determine if the code is in a loop or not. We could have went with the route of a global variable but was bad in practice to do. This code will use a helper function that checks if the statement conditon is a valid bool type and then called the check statement function for the body inside and set the inLoop to 'true' when a while loop is occuring. In relation to this function there is the Break condition in the function that checks statments and then sets the 'inLoop' variable back to false to state that the loop has been broken. 
+> Code from Typechecker for checking the while statements. In this case we had to create a Bool variable called 'inLoop' that would be passed to determine if the code is in a loop or not. We could have went with the route of a global variable but was bad in practice to do. This code will use a helper function that checks if the statement conditon is a valid bool type and then called the check statement function for the body inside and set the inLoop to 'true' when a while loop is occuring. In relation to this function there is the Break condition in the function that checks statments and then sets the 'inLoop' variable back to false to state that the loop has been broken. 
 ```java
     public static Map<Identifier, Type> typecheckWhile(final WhileStmt stmt, final Map<Identifier, Type> typeEnv,
             final Map<String, Map<String, Type>> structEnv,
@@ -62,7 +62,7 @@ Erick: I liked this language because I have used C before in my operating system
             }
 
 ```
-> This is another fucntion from the Typechecker. This fucntion is used as a helper function to check if the fields in the struct definition are valid. This check function ensures that the fields being added to a struct are of a valid type and checks that void is not a valid type for a variable being declared. As well it checks if other structs declared can be used in the struct definition by checking the Map are the Struct. We use a Map<String, Map<String, Type>> type because the structs can have multiple variables declared so an inside Map is needed to keep track of them. The last check throws and error if none of the valid types was passed in.  
+> This is another function from the Typechecker. This fucntion is used as a helper function to check if the fields in the struct definition are valid. This check function ensures that the fields being added to a struct are of a valid type and checks that void is not a valid type for a variable being declared. As well it checks if other structs declared can be used in the struct definition by checking the Map relating to structs. We use a Map<String, Map<String, Type>> type because the structs can have multiple variables declared so an inside Map is needed to keep track of them. The last check throws and error if none of the valid types was passed in.  
 ```java
  public static void assertValidFieldType(
             final Type type,
@@ -140,7 +140,7 @@ Erick: I liked this language because I have used C before in my operating system
 
     }
 ```
-> This is function is from the Parsers file. Here we are creating a function for the grammar for struct definitions. There is a check to see if a struct token is present before parsing the rest of the token. Then we extract the name of the struct to be used and we again use the catch all Idenitifier Token. We check for the brackets and the list of potential parameters by checking the right brace token has not been read. As we can see in this example we use 'name' for the struct definition which should have been used for all but in some classes in out Parser folder we also used Idenitfier. This could be a result of each of use having different naming styles and a formal way to name these varaibles could have been used. 
+> This function is from the Parser file. Here we are creating a function for the grammar for struct definitions. There is a check to see if a struct token is present before parsing the rest of the token. Then we extract the name of the struct to be used and we again use the catch all Idenitifier Token. We check for the brackets and the list of potential parameters by checking the right brace token has not been read. As we can see in this example we use 'name' for the struct definition which should have been used for all but in some classes in out Parser folder we also used 'idenitfier' instead of name. This could be a result of each of use having different naming styles and a formal way to name these varaibles could have been used. 
 ```java
     // structdef ::= `struct` structname `{` (param `;`)* `}`
     public ParseResult<StructDef> parseStructDef(final int startPos) throws ParseException {
@@ -171,7 +171,7 @@ Erick: I liked this language because I have used C before in my operating system
 - Structs are heap allocated
 - All structs are heap allocated
 - No strings, characters, floats, or arrays
-- No generics, interfaces, type inferences, or function types
+- No generics, interfaces, type inferences, or function 
 
 ## Lessons Learned
 
@@ -189,13 +189,13 @@ Chris: I personally used VS Code, which was effective enough to not make me want
 
 ### Would you choose a different target language?
 
-Erick: If I ever did another complier for a language I would say Python since its a dynamic language. 
+Erick: If I ever did another complier for a language I would say Python since its a dynamic language. It seems there would be more checks to be made since variables can become a different type at any time.
 
 Chris: C is one of my favorite languages and one of the reasons I chose this langauge, so no.
 
 ### Would you change anything about how you communicated within the group
 
-Erick: Each person knew what they had to compelete for work and response between each other was fast and prompt. 
+Erick: Each person knew what they had to compelete for work and response between each other was fast and prompt. It would have be nice to have a group of four but due to the class size and the potential third member dropping the course led to only us two. 
 
 Chris: Communication was a bit rocky at the start as there was some confusion on who was in our group, but overall it worked out fine. We agreed on what each person is working on and then executed it effectively.
 
