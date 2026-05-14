@@ -42,7 +42,7 @@ Erick: I liked this language because I have used C before in my operating system
       }                                                                                                                                                                        
   }
 ```
-> Code from Typechecker for checking the while statments. In this cases we had to create a Bool variable called 'inLoop' that would be passed to determine if the code is in a loop or not. We could have went with the route of a global variable but was bad in practice to do. This code will use a helper function that checks if the statement conditon is a valid bool type and then called the check statement function for the body inside and set the inLoop to 'true' when is starts as false to state that a while loop is occuring. In relation to this function there is the Break condition to set this 'inLoop' variable back to false to state that the loop has be broken. 
+> Code from Typechecker for checking the while statments. In this case we had to create a Bool variable called 'inLoop' that would be passed to determine if the code is in a loop or not. We could have went with the route of a global variable but was bad in practice to do. This code will use a helper function that checks if the statement conditon is a valid bool type and then called the check statement function for the body inside and set the inLoop to 'true' when a while loop is occuring. In relation to this function there is the Break condition in the function that checks statments and then sets the 'inLoop' variable back to false to state that the loop has been broken. 
 ```java
     public static Map<Identifier, Type> typecheckWhile(final WhileStmt stmt, final Map<Identifier, Type> typeEnv,
             final Map<String, Map<String, Type>> structEnv,
@@ -62,6 +62,108 @@ Erick: I liked this language because I have used C before in my operating system
             }
 
 ```
+> This is another fucntion from the Typechecker. This fucntion is used as a helper function to check if the fields in the struct definition are valid. This check function ensures that the fields being added to a struct are of a valid type and checks that void is not a valid type for a variable being declared. As well it checks if other structs declared can be used in the struct definition by checking the Map are the Struct. We use a Map<String, Map<String, Type>> type because the structs can have multiple variables declared so an inside Map is needed to keep track of them. The last check throws and error if none of the valid types was passed in.  
+```java
+ public static void assertValidFieldType(
+            final Type type,
+            final Map<String, Map<String, Type>> structEnv)
+            throws TypeErrorException {
+
+        if (type instanceof IntType || type instanceof BoolType) {
+            return;
+        }
+
+        if (type instanceof VoidType) {
+            throw new TypeErrorException("Struct fields cannot have type void");
+        }
+
+        if (type instanceof StructType structType) {
+            if (!structEnv.containsKey(structType.name())) {
+                throw new TypeErrorException("Unknown struct type: " + structType.name());
+            }
+            return;
+        }
+
+        throw new TypeErrorException("Invalid field type: " + type);
+    }
+```
+> This function is from the Token file. This function in hindsight could have been slpit or changed since we went with 'Identifier' as a catch all for all named variables, structs, and functions. In the last else statment we check if no reserved word was use then the passed in Token would become an Identifier Token which could be used to represent anything. In the Parser it got confusing changing 'identifier' with 'name' and should have stuck to one when coding to keep a sense of consistency. 
+ public Optional<Token> readIdentifierOrReservedWord() {
+        char c = input.charAt(position);
+        if (Character.isLetter(c)) {
+            String identifierOrReservedWord = "" + c;
+            position++;
+
+            while (position < input.length() &&
+                    Character.isLetterOrDigit(c = input.charAt(position))) {
+                identifierOrReservedWord += c;
+                position++;
+            }
+
+            if (identifierOrReservedWord.equals("true")) {
+                return Optional.of(new TrueToken());
+            } else if (identifierOrReservedWord.equals("false")) {
+                return Optional.of(new FalseToken());
+            } else if (identifierOrReservedWord.equals("void")) {
+                return Optional.of(new VoidToken());
+            } else if (identifierOrReservedWord.equals("while")) {
+                return Optional.of(new WhileToken());
+            } else if (identifierOrReservedWord.equals("struct")) {
+                return Optional.of(new StructToken());
+            } else if (identifierOrReservedWord.equals("null")) {
+                return Optional.of(new NullToken());
+            } else if (identifierOrReservedWord.equals("new")) {
+                return Optional.of(new NewToken());
+            } else if (identifierOrReservedWord.equals("println")) {
+                return Optional.of(new PrintlnToken());
+            } else if (identifierOrReservedWord.equals("return")) {
+                return Optional.of(new ReturnToken());
+            } else if (identifierOrReservedWord.equals("if")) {
+                return Optional.of(new IfToken());
+            } else if (identifierOrReservedWord.equals("else")) {
+                return Optional.of(new ElseToken());
+            } else if (identifierOrReservedWord.equals("bool")) {
+                return Optional.of(new BoolToken());
+            } else if (identifierOrReservedWord.equals("break")) {
+                return Optional.of(new BreakToken());
+            } else if (identifierOrReservedWord.equals("func")) {
+                return Optional.of(new FuncToken());
+            } else if (identifierOrReservedWord.equals("int")) {
+                return Optional.of(new IntToken());
+            } else {
+
+                return Optional.of(new IdentifierToken(identifierOrReservedWord));
+            }
+        } else {
+            return Optional.empty();
+        }
+
+    }
+```
+> This is function is from the Parsers file. Here we are creating a function for the grammar for struct definitions. There is a check to see if a struct token is present before parsing the rest of the token. Then we extract the name of the struct to be used and we again use the catch all Idenitifier Token. We check for the brackets and the list of potential parameters by checking the right brace token has not been read. As we can see in this example we use 'name' for the struct definition which should have been used for all but in some classes in out Parser folder we also used Idenitfier. This could be a result of each of use having different naming styles and a formal way to name these varaibles could have been used. 
+```java
+    // structdef ::= `struct` structname `{` (param `;`)* `}`
+    public ParseResult<StructDef> parseStructDef(final int startPos) throws ParseException {
+        if (!(getToken(startPos) instanceof StructToken)) {
+            throw new ParseException("Expected 'struct' at position " + startPos);
+        }
+        final Token nameTok = getToken(startPos + 1);
+        if (!(nameTok instanceof IdentifierToken id)) {
+            throw new ParseException("Expected struct name at position " + (startPos + 1));
+        }
+        assertTokenHereIs(startPos + 2, new LeftBraceToken());
+        final List<Param> fields = new ArrayList<>();
+        int pos = startPos + 3;
+        while (!(getToken(pos) instanceof RightBraceToken)) {
+            final ParseResult<Param> p = parseParam(pos);
+            fields.add(p.result());
+            assertTokenHereIs(p.nextPos(), new SemicolonToken());
+            pos = p.nextPos() + 1;
+        }
+        return new ParseResult<>(new StructDef(id.name(), fields), pos + 1);
+    }
+```
+
 
 ## Known Limitations
 
