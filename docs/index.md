@@ -17,8 +17,7 @@ C-Heap is a language focused on structs, heap allocation, and automatic memory r
 
 Chris: While looking through all the proposals, one of the requirements I gave myself was an easy to understand syntax when writing the language. I really disliked the way that S-expressions looked so I avoided any proposals that utilized them. The idea that all the structs are heap-allocated also interested me since it would give me an opportunity to understand heaps more. I also enjoy C as a language, so making a language that compiles to C sounded neat.
 
-Erick: 
-
+Erick: I liked this language because I have used C before in my operating system class so it seemed great to create a complier for it. The reference counting aspect seemed like a challenge to implement as well. Heap allocation has always interested me since it requires variables to be allocated and deallocated for more efficient way of handling memory leaks. 
 ## Code Snippets
 
 > The tokenizer checks for <=, >=, ==, and != before checking any single-characters. Otherwise, symbols like <= would be read as the less than token and then fail right after.
@@ -43,6 +42,26 @@ Erick:
       }                                                                                                                                                                        
   }
 ```
+> Code from Typechecker for checking the while statments. In this cases we had to create a Bool variable called 'inLoop' that would be passed to determine if the code is in a loop or not. We could have went with the route of a global variable but was bad in practice to do. This code will use a helper function that checks if the statement conditon is a valid bool type and then called the check statement function for the body inside and set the inLoop to 'true' when is starts as false to state that a while loop is occuring. In relation to this function there is the Break condition to set this 'inLoop' variable back to false to state that the loop has be broken. 
+```java
+    public static Map<Identifier, Type> typecheckWhile(final WhileStmt stmt, final Map<Identifier, Type> typeEnv,
+            final Map<String, Map<String, Type>> structEnv,
+            final Map<String, FuncDef> functionEnv,
+            final boolean inLoop, final Type expectedReturnType)
+            throws TypeErrorException {
+        assertTypesEqual(new BoolType(), typeof(stmt.condition(), typeEnv, structEnv, functionEnv));
+        typecheckStmt(stmt.body(), typeEnv, structEnv, functionEnv, true, expectedReturnType);
+        return typeEnv;
+    }
+// code snipet from checkType in statments related to while statment.
+        } else if (stmt instanceof BreakStmt) {
+            if (inLoop) {
+                return typeEnv;
+            } else {
+                throw new TypeErrorException("Break outside of Loop");
+            }
+
+```
 
 ## Known Limitations
 
@@ -56,25 +75,25 @@ Erick:
 
 ### Would you design anything differently?
 
-Erick:
+Erick: I would have made sure the way we name variables was the same accross all files. An example is for some files we used 'name' for variable name or we would use 'identifier' since that was the generic name for variables we used. If we had time to maybe try to use a functional language to develop our complier since from the class examples made it seem like an easier choice to write it in. 
 
 Chris:
 
 ### Would you choose a different development tool?
 
-Erick:
+Erick: I have always used VS Code so I feel most comfortable with it since you can add extensions to make it more tailored. 
 
 Chris: I personally used VS Code, which was effective enough to not make me want to switch to a much more powerful IDE
 
 ### Would you choose a different target language?
 
-Erick:
+Erick: If I ever did another complier for a language I would say Python since its a dynamic language. 
 
 Chris: C is one of my favorite languages and one of the reasons I chose this langauge, so no.
 
 ### Would you change anything about how you communicated within the group
 
-Erick:
+Erick: Each person knew what they had to compelete for work and response between each other was fast and prompt. 
 
 Chris: Communication was a bit rocky at the start as there was some confusion on who was in our group, but overall it worked out fine. We agreed on what each person is working on and then executed it effectively.
 
