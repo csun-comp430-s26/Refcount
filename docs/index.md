@@ -20,7 +20,7 @@ Chris: While looking through all the proposals, one of the requirements I gave m
 Erick: I liked this language because I have used C before in my operating system class so it seemed great to create a complier for it. The reference counting aspect seemed like a challenge to implement as well. Heap allocation has always interested me since it requires variables to be allocated and deallocated for more efficient way of handling memory leaks. 
 ## Code Snippets
 
-> The tokenizer checks for <=, >=, ==, and != before checking any single-characters. Otherwise, symbols like <= would be read as the less than token and then fail right after.
+> The lexer recognizes two-character comparison and equality operators (`<=`, `>=`, `==`, `!=`) before it treats `<`, `>`, `=`, or `!` as standalone single-character tokens. Whenever the next character could extend the current token into a longer, legal operator, the tokenizer should commit to that longer form. If the lexer consumed `<` first and only then looked ahead, an input like `<=` would become a less-than token followed by `=`, which can produce a confusing parse or type error later. Getting the order right saves a lot of debugging time in the parser and typechecker downstream, since those phases can assume each comparison operator is a single token with the intended meaning.
 ```java
   if (position + 1 < input.length()) {                                                                                                                                         
       char next = input.charAt(position + 1);                                                                                                                                  
@@ -42,6 +42,73 @@ Erick: I liked this language because I have used C before in my operating system
       }                                                                                                                                                                        
   }
 ```
+
+> After literals are handled (BoolExp yields BoolType), BinopExp is where equality (==, !=), ordering (<, <=, >, >=), and arithmetic meet the type rules. Each comparison or equality branch returns 'BoolType' only when the operand types match what the language allows—for example both int, both bool, struct paired with null, or both null. Anything else falls through to an “ill typed” error.
+
+```java
+        } else if (exp instanceof BoolExp) {
+            return new BoolType();
+        } else if (exp instanceof BinopExp binopExp) {
+            final Type leftType = typeof(binopExp.left(), typeEnv, structEnv, functionEnv);
+            final Type rightType = typeof(binopExp.right(), typeEnv, structEnv, functionEnv);
+
+            if ((binopExp.op() instanceof PlusOp || binopExp.op() instanceof MinusOp) && leftType instanceof IntType
+                    && rightType instanceof IntType) {
+                return new IntType();
+
+            } else if ((binopExp.op() instanceof TimesOp || binopExp.op() instanceof DivideOp)
+                    && leftType instanceof IntType && rightType instanceof IntType) {
+                return new IntType();
+            } else if ((binopExp.op() instanceof EqualEqualOp || binopExp.op() instanceof NotEqualOp)
+                    && leftType instanceof BoolType && rightType instanceof BoolType) {
+                return new BoolType();
+            } else if ((binopExp.op() instanceof EqualEqualOp || binopExp.op() instanceof NotEqualOp)
+                    && leftType instanceof IntType && rightType instanceof IntType) {
+                return new BoolType();
+            } else if ((binopExp.op() instanceof LessThanOp || binopExp.op() instanceof LessEqualOp
+                    || binopExp.op() instanceof GreaterThanOp || binopExp.op() instanceof GreaterEqualOp)
+                    && leftType instanceof IntType && rightType instanceof IntType) {
+                return new BoolType();
+            } else if ((binopExp.op() instanceof EqualEqualOp || binopExp.op() instanceof NotEqualOp)
+                    && ((leftType instanceof StructType && rightType instanceof NullType)
+                            || (leftType instanceof NullType && rightType instanceof StructType))) {
+                return new BoolType();
+            } else if ((binopExp.op() instanceof EqualEqualOp || binopExp.op() instanceof NotEqualOp)
+                    && leftType instanceof NullType && rightType instanceof NullType) {
+                return new BoolType();
+            } else {
+                throw new TypeErrorException("leftType: " + leftType +
+                        "rightType: " + rightType +
+                        "op: " + binopExp.op() +
+                        " is ill typed");
+            }
+```
+
+> The grammar treats 'equals_exp' as a chain of == / != between relational_exp operands. Each side is parsed with parseRelationalExp, so ordering comparisons bind tighter than equality in the AST—matching the usual expectation that a < b == c groups as (a < b) == c. The loop maps EqualEqualToken and NotEqualToken from the tokenizer into EqualEqualOp and NotEqualOp on BinopExp nodes, which the typechecker snippet above then validates.
+
+```java
+    // equals_exp ::= relational_exp ( (`==` | `!=`) relational_exp )*
+    public ParseResult<Exp> parseEqualsExp(final int startPos) throws ParseException {
+        ParseResult<Exp> left = parseRelationalExp(startPos);
+        int pos = left.nextPos();
+        while (pos < tokens.size()) {
+            final Token opTok = getToken(pos);
+            final Op op;
+            if (opTok instanceof EqualEqualToken) {
+                op = new EqualEqualOp();
+            } else if (opTok instanceof NotEqualToken) {
+                op = new NotEqualOp();
+            } else {
+                break;
+            }
+            final ParseResult<Exp> right = parseRelationalExp(pos + 1);
+            left = new ParseResult<>(new BinopExp(left.result(), op, right.result()), right.nextPos());
+            pos = left.nextPos();
+        }
+        return left;
+    }
+```
+
 > Code from Typechecker for checking the while statements. In this case we had to create a Bool variable called 'inLoop' that would be passed to determine if the code is in a loop or not. We could have went with the route of a global variable but was bad in practice to do. This code will use a helper function that checks if the statement conditon is a valid bool type and then called the check statement function for the body inside and set the inLoop to 'true' when a while loop is occuring. In relation to this function there is the Break condition in the function that checks statments and then sets the 'inLoop' variable back to false to state that the loop has been broken. 
 ```java
     public static Map<Identifier, Type> typecheckWhile(final WhileStmt stmt, final Map<Identifier, Type> typeEnv,
@@ -179,7 +246,7 @@ Erick: I liked this language because I have used C before in my operating system
 
 Erick: I would have made sure the way we name variables was the same accross all files. An example is for some files we used 'name' for variable name or we would use 'identifier' since that was the generic name for variables we used. If we had time to maybe try to use a functional language to develop our complier since from the class examples made it seem like an easier choice to write it in. 
 
-Chris:
+Chris: To make the design of the language more inline with current languages, I would add 'else if', comment support, and maybe arrays (at the very least, fixed length arrays), to the original design of the project. I'm not sure how much more complex this would be to implement, but these features are so common that it feels weird to exclude them out of a language.
 
 ### Would you choose a different development tool?
 
