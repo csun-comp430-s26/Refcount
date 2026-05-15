@@ -20,7 +20,7 @@ Chris: While looking through all the proposals, one of the requirements I gave m
 Erick: I liked this language because I have used C before in my operating system class so it seemed great to create a complier for it. The reference counting aspect seemed like a challenge to implement as well. Heap allocation has always interested me since it requires variables to be allocated and deallocated for more efficient way of handling memory leaks. 
 ## Code Snippets
 
-> The lexer recognizes two-character comparison and equality operators (`<=`, `>=`, `==`, `!=`) before it treats `<`, `>`, `=`, or `!` as standalone single-character tokens. Whenever the next character could extend the current token into a longer, legal operator, the tokenizer should commit to that longer form. If the lexer consumed `<` first and only then looked ahead, an input like `<=` would become a less-than token followed by `=`, which can produce a confusing parse or type error later. Getting the order right saves a lot of debugging time in the parser and typechecker downstream, since those phases can assume each comparison operator is a single token with the intended meaning.
+> This function is from the Tokenizer file where we read symbol tokens off the input. We have to check the two-character operators first (<=, >=, ==, !=) before we fall through to the single-character branch, because if we grabbed just < or = by itself we would split something like <= or == into two wrong tokens and the parser would fail in a hard-to-read way later on. When we see a match we bump position by two and return the right token type.
 ```java
   if (position + 1 < input.length()) {                                                                                                                                         
       char next = input.charAt(position + 1);                                                                                                                                  
@@ -43,7 +43,7 @@ Erick: I liked this language because I have used C before in my operating system
   }
 ```
 
-> After literals are handled (BoolExp yields BoolType), BinopExp is where equality (==, !=), ordering (<, <=, >, >=), and arithmetic meet the type rules. Each comparison or equality branch returns 'BoolType' only when the operand types match what the language allows—for example both int, both bool, struct paired with null, or both null. Anything else falls through to an “ill typed” error.
+> This is another function from the Typechecker, in the typeof helper where we handle BinopExp. After we deal with simple cases like BoolExp returning BoolType, we type the left and right sub-expressions recursively and then we walk a big chain of 'if' branches: plus and minus need two ints and return int, times and divide the same, then == and != can compare two ints, two bools, a struct with null or the other way around, or null with null, and they all return bool, and the '<', '<=', '>', '>=' operators only allow two ints and also return bool. If nothing matches it throws an ill typed error with the types and operator in the message.
 
 ```java
         } else if (exp instanceof BoolExp) {
@@ -84,7 +84,7 @@ Erick: I liked this language because I have used C before in my operating system
             }
 ```
 
-> The grammar treats 'equals_exp' as a chain of == / != between relational_exp operands. Each side is parsed with parseRelationalExp, so ordering comparisons bind tighter than equality in the AST—matching the usual expectation that a < b == c groups as (a < b) == c. The loop maps EqualEqualToken and NotEqualToken from the tokenizer into EqualEqualOp and NotEqualOp on BinopExp nodes, which the typechecker snippet above then validates.
+> This function is from the Parser file and it implements the equals_exp grammar rule from our spec. We call parseRelationalExp for the left-hand side first, then we loop as long as the next token is '==' or '!=', each time parsing another relational piece on the right and wrapping everything in a nested BinopExp. That setup means ordering operators like '<' get parsed inside parseRelationalExp before we glue on equality, so something like 'a < b == c' builds the comparison between a and b first, then applies == to that subtree and c. We map EqualEqualToken and NotEqualToken from the tokenizer to EqualEqualOp and NotEqualOp here, and the typechecker snippet above uses those operator types to decide if the expression is legal.
 
 ```java
     // equals_exp ::= relational_exp ( (`==` | `!=`) relational_exp )*
@@ -154,7 +154,8 @@ Erick: I liked this language because I have used C before in my operating system
         throw new TypeErrorException("Invalid field type: " + type);
     }
 ```
-> This function is from the Token file. This function in hindsight could have been slpit or changed since we went with 'Identifier' as a catch all for all named variables, structs, and functions. In the last else statment we check if no reserved word was use then the passed in Token would become an Identifier Token which could be used to represent anything. In the Parser it got confusing changing 'identifier' with 'name' and should have stuck to one when coding to keep a sense of consistency. 
+> This function is from the Token file. This function in hindsight could have been slpit or changed since we went with 'Identifier' as a catch all for all named variables, structs, and functions. In the last else statment we check if no reserved word was use then the passed in Token would become an Identifier Token which could be used to represent anything. In the Parser it got confusing changing 'identifier' with 'name' and should have stuck to one when coding to keep a sense of consistency.
+```java
  public Optional<Token> readIdentifierOrReservedWord() {
         char c = input.charAt(position);
         if (Character.isLetter(c)) {
